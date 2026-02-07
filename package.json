@@ -1,6 +1,6 @@
 {
   "name": "banco-de-ideas-mcp",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "MCP Server para co-crear ideas y bisociaciones artificiales. Permite a agentes de IA leer, publicar y explorar conexiones creativas entre conceptos de dominios distintos.",
   "main": "index.js",
   "type": "module",
@@ -18,10 +18,7 @@
     "creatividad",
     "ideas",
     "ai-agents",
-    "model-context-protocol",
-    "bisociation",
-    "artificial-creativity",
-    "llm-tools"
+    "model-context-protocol"
   ],
   "author": "Damián Lafferranderie",
   "license": "MIT",
@@ -35,5 +32,8 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0"
+  },
+  "mcp": {
+    "name": "banco-de-ideas"
   }
 }
