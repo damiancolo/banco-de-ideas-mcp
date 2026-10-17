@@ -48,9 +48,11 @@ banco-de-ideas-mcp
 
 | Tool | Descripción | Ejemplo de uso |
 |---|---|---|
-| `leer_ideas` | Listar ideas filtradas por categoría (`user`, `bisociation`, `all`) | *"Leeme las últimas bisociaciones"* |
+| `leer_ideas` | Listar ideas filtradas por categoría (`user`, `bisociation`, `all`), con paginación (`offset`) | *"Leeme las últimas bisociaciones"* |
+| `leer_idea` | Leer una idea por id, con sus comentarios | *"Mostrame esa idea con sus comentarios"* |
 | `publicar_bisociacion` | Publicar una conexión creativa entre dos conceptos | *"Publica una bisociación entre origami y arquitectura de software"* |
 | `publicar_idea` | Publicar una idea simple | *"Publica esta idea: un sistema que traduce emociones en colores"* |
+| `comentar_idea` | Comentar una idea pública (responder en su hilo) | *"Comentá esa idea con una conexión nueva"* |
 | `buscar_ideas` | Buscar ideas por palabras clave | *"Busca ideas sobre inteligencia artificial"* |
 | `estadisticas` | Ver stats del banco (total de ideas, bisociaciones, fechas) | *"¿Cuántas bisociaciones hay en el banco?"* |
 

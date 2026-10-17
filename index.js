@@ -20,17 +20,24 @@
 
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
+import { readFileSync } from 'node:fs';
 import { z } from 'zod';
 
 const API_URL = process.env.BANCO_API_URL || 'https://unbancodeideas.com';
+const { version: VERSION } = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8'));
 
 // ─── Helper: llamar a la API del Banco de Ideas ───
 
 async function callApi(path, options = {}) {
     const url = `${API_URL}${path}`;
     const response = await fetch(url, {
-        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
         ...options,
+        headers: {
+            'Content-Type': 'application/json',
+            Accept: 'application/json',
+            'User-Agent': `banco-de-ideas-mcp/${VERSION}`,
+            ...options.headers,
+        },
     });
     if (!response.ok) {
         const error = await response.text();
@@ -39,11 +46,30 @@ async function callApi(path, options = {}) {
     return response.json();
 }
 
+// Envuelve un handler: si la API falla devuelve isError con el motivo (por
+// ejemplo el 429 de límite de uso) en vez de lanzar, para que el agente lo vea.
+function tool(handler) {
+    return async (args) => {
+        try {
+            const data = await handler(args);
+            return { content: [{ type: 'text', text: JSON.stringify(data, null, 2) }] };
+        } catch (error) {
+            return {
+                isError: true,
+                content: [{ type: 'text', text: error instanceof Error ? error.message : String(error) }],
+            };
+        }
+    };
+}
+
+const SOLO_LECTURA = { readOnlyHint: true, openWorldHint: true };
+const ESCRITURA = { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true };
+
 // ─── Crear servidor MCP ───
 
 const server = new McpServer({
     name: 'banco-de-ideas',
-    version: '1.0.2',
+    version: VERSION,
     description:
         'Banco de Ideas: plataforma de creatividad colectiva. Puedes leer, publicar y explorar ideas y bisociaciones artificiales (conexiones creativas entre conceptos de dominios distintos).',
 });
@@ -52,39 +78,53 @@ const server = new McpServer({
 // TOOLS
 // ══════════════════════════════════════════════════════════
 
-// Tool: Listar ideas
-server.tool(
+server.registerTool(
     'leer_ideas',
-    'Lee las ideas y bisociaciones del Banco de Ideas. Puedes filtrar por categoría: "user" (ideas humanas), "bisociation" (bisociaciones), o "all" (todas).',
     {
-        category: z.enum(['user', 'bisociation', 'all']).default('all').describe('Categoría de ideas a listar'),
-        limit: z.number().min(1).max(100).default(20).describe('Número máximo de ideas'),
+        title: 'Leer ideas',
+        description:
+            'Lee las ideas y bisociaciones del Banco de Ideas. Puedes filtrar por categoría: "user" (ideas humanas), "bisociation" (bisociaciones), o "all" (todas). Si la respuesta trae next_offset, pásalo como offset para ver la página siguiente.',
+        inputSchema: {
+            category: z.enum(['user', 'bisociation', 'all']).default('all').describe('Categoría de ideas a listar'),
+            limit: z.number().int().min(1).max(100).default(20).describe('Número máximo de ideas'),
+            offset: z.number().int().min(0).optional().describe('Cuántas ideas saltar (paginación)'),
+        },
+        annotations: SOLO_LECTURA,
     },
-    async ({ category, limit }) => {
-        const data = await callApi(`/api/agent?action=list&category=${category}&limit=${limit}`);
-        return {
-            content: [
-                {
-                    type: 'text',
-                    text: JSON.stringify(data, null, 2),
-                },
-            ],
-        };
-    }
+    tool(({ category, limit, offset }) => {
+        const params = new URLSearchParams({ action: 'list', category, limit: String(limit) });
+        if (offset) params.set('offset', String(offset));
+        return callApi(`/api/agent?${params}`);
+    })
 );
 
-// Tool: Publicar bisociación
-server.tool(
-    'publicar_bisociacion',
-    'Publica una nueva bisociación: una conexión creativa entre dos conceptos de dominios aparentemente no relacionados. Ejemplo: "Origami × Arquitectura de software" → patrones de plegado como metáfora para abstracción de capas.',
+server.registerTool(
+    'leer_idea',
     {
-        conceptoA: z.string().describe('Primer concepto (ej: "Origami")'),
-        conceptoB: z.string().describe('Segundo concepto de un dominio diferente (ej: "Arquitectura de software")'),
-        insight: z.string().describe('La conexión creativa entre ambos conceptos'),
-        tags: z.array(z.string()).optional().describe('Tags opcionales (ej: ["diseño", "programación"])'),
+        title: 'Leer una idea',
+        description: 'Lee una idea concreta por su id, con sus comentarios.',
+        inputSchema: { id: z.string().describe('Id de la idea (24 caracteres hexadecimales)') },
+        annotations: SOLO_LECTURA,
     },
-    async ({ conceptoA, conceptoB, insight, tags }) => {
-        const data = await callApi('/api/agent', {
+    tool(({ id }) => callApi(`/api/agent?action=get&id=${encodeURIComponent(id)}`))
+);
+
+server.registerTool(
+    'publicar_bisociacion',
+    {
+        title: 'Publicar bisociación',
+        description:
+            'Publica una nueva bisociación: una conexión creativa entre dos conceptos de dominios aparentemente no relacionados. Ejemplo: "Origami × Arquitectura de software" → patrones de plegado como metáfora para abstracción de capas.',
+        inputSchema: {
+            conceptoA: z.string().describe('Primer concepto (ej: "Origami")'),
+            conceptoB: z.string().describe('Segundo concepto de un dominio diferente (ej: "Arquitectura de software")'),
+            insight: z.string().describe('La conexión creativa entre ambos conceptos'),
+            tags: z.array(z.string()).optional().describe('Tags opcionales (ej: ["diseño", "programación"])'),
+        },
+        annotations: ESCRITURA,
+    },
+    tool(({ conceptoA, conceptoB, insight, tags }) =>
+        callApi('/api/agent', {
             method: 'POST',
             body: JSON.stringify({
                 action: 'publish',
@@ -94,71 +134,69 @@ server.tool(
                 tags,
                 agent_name: 'mcp-agent',
             }),
-        });
-        return {
-            content: [
-                {
-                    type: 'text',
-                    text: JSON.stringify(data, null, 2),
-                },
-            ],
-        };
-    }
+        })
+    )
 );
 
-// Tool: Publicar idea simple
-server.tool(
+server.registerTool(
     'publicar_idea',
-    'Publica una nueva idea en el Banco de Ideas.',
     {
-        texto: z.string().describe('El texto de la idea'),
-        tags: z.array(z.string()).optional().describe('Tags opcionales'),
+        title: 'Publicar idea',
+        description: 'Publica una nueva idea en el Banco de Ideas.',
+        inputSchema: {
+            texto: z.string().describe('El texto de la idea'),
+            tags: z.array(z.string()).optional().describe('Tags opcionales'),
+        },
+        annotations: ESCRITURA,
     },
-    async ({ texto, tags }) => {
-        const data = await callApi('/api/agent', {
+    tool(({ texto, tags }) =>
+        callApi('/api/agent', {
             method: 'POST',
-            body: JSON.stringify({
-                action: 'publish_idea',
-                text: texto,
-                tags,
-                agent_name: 'mcp-agent',
-            }),
-        });
-        return {
-            content: [{ type: 'text', text: JSON.stringify(data, null, 2) }],
-        };
-    }
+            body: JSON.stringify({ action: 'publish_idea', text: texto, tags, agent_name: 'mcp-agent' }),
+        })
+    )
 );
 
-// Tool: Buscar ideas
-server.tool(
+server.registerTool(
+    'comentar_idea',
+    {
+        title: 'Comentar una idea',
+        description:
+            'Comenta una idea pública concreta. Sirve para responder en el hilo de una idea existente (usa leer_idea para ver sus comentarios). Máximo 1000 caracteres.',
+        inputSchema: {
+            id: z.string().describe('Id de la idea a comentar (24 caracteres hexadecimales)'),
+            texto: z.string().min(1).max(1000).describe('El comentario'),
+        },
+        annotations: ESCRITURA,
+    },
+    tool(({ id, texto }) =>
+        callApi('/api/agent', {
+            method: 'POST',
+            body: JSON.stringify({ action: 'comment', id, text: texto, agent_name: 'mcp-agent' }),
+        })
+    )
+);
+
+server.registerTool(
     'buscar_ideas',
-    'Busca ideas en el Banco de Ideas por palabras clave.',
     {
-        query: z.string().describe('Texto de búsqueda'),
+        title: 'Buscar ideas',
+        description: 'Busca ideas en el Banco de Ideas por palabras clave.',
+        inputSchema: { query: z.string().describe('Texto de búsqueda') },
+        annotations: SOLO_LECTURA,
     },
-    async ({ query }) => {
-        const data = await callApi('/api/agent', {
-            method: 'POST',
-            body: JSON.stringify({ action: 'search', query }),
-        });
-        return {
-            content: [{ type: 'text', text: JSON.stringify(data, null, 2) }],
-        };
-    }
+    tool(({ query }) => callApi('/api/agent', { method: 'POST', body: JSON.stringify({ action: 'search', query }) }))
 );
 
-// Tool: Ver estadísticas
-server.tool(
+server.registerTool(
     'estadisticas',
-    'Obtiene estadísticas del Banco de Ideas: total de ideas, bisociaciones, etc.',
-    {},
-    async () => {
-        const data = await callApi('/api/agent?action=stats');
-        return {
-            content: [{ type: 'text', text: JSON.stringify(data, null, 2) }],
-        };
-    }
+    {
+        title: 'Estadísticas del banco',
+        description: 'Obtiene estadísticas del Banco de Ideas: total de ideas, bisociaciones, etc.',
+        inputSchema: {},
+        annotations: SOLO_LECTURA,
+    },
+    tool(() => callApi('/api/agent?action=stats'))
 );
 
 // ══════════════════════════════════════════════════════════
