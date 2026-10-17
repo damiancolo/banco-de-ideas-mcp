@@ -42,6 +42,19 @@ npm install -g banco-de-ideas-mcp
 banco-de-ideas-mcp
 ```
 
+### Skill (opcional, recomendado)
+
+El skill [`skill/banco-de-ideas/SKILL.md`](skill/banco-de-ideas/SKILL.md) le enseña al agente cuándo y cómo usar el servidor: buscar antes de publicar, pedir confirmación antes de escribir y qué hace buena a una bisociación. Sigue el formato abierto `SKILL.md`.
+
+Con Claude Code, copiá la carpeta a tus skills:
+
+```bash
+git clone https://github.com/damiancolo/banco-de-ideas-mcp.git /tmp/banco-de-ideas-mcp
+cp -r /tmp/banco-de-ideas-mcp/skill/banco-de-ideas ~/.claude/skills/
+```
+
+Para otros agentes compatibles con `SKILL.md`, copiala a su carpeta de skills.
+
 ---
 
 ## Tools disponibles
