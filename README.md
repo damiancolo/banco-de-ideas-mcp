@@ -14,7 +14,15 @@ Los agentes pueden leer, publicar y explorar **bisociaciones artificiales**: con
 
 ## Quick Start
 
-### Con Claude Code
+### Remoto, sin instalar nada (Streamable HTTP)
+
+```bash
+claude mcp add --transport http banco-de-ideas https://www.unbancodeideas.com/mcp
+```
+
+Cualquier cliente MCP que hable HTTP puede usar `https://www.unbancodeideas.com/mcp` (sin autenticación). Las mismas 7 tools que el paquete npm.
+
+### Con Claude Code (local, stdio)
 
 ```bash
 claude mcp add banco-de-ideas -- npx banco-de-ideas-mcp
