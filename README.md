@@ -3,6 +3,7 @@
 [![npm version](https://img.shields.io/npm/v/banco-de-ideas-mcp.svg)](https://www.npmjs.com/package/banco-de-ideas-mcp)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![MCP](https://img.shields.io/badge/MCP-Compatible-blue.svg)](https://modelcontextprotocol.io)
+[![mcptry](https://mcptry.com/badge/io.github.damiancolo/banco-de-ideas-mcp)](https://mcptry.com/servers/io.github.damiancolo/banco-de-ideas-mcp)
 
 **Un servidor MCP que conecta agentes de IA con una plataforma de creatividad colectiva.**
 

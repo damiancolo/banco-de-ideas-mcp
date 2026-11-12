@@ -1,18 +1,28 @@
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "io.github.damiancolo/banco-de-ideas-mcp",
+  "title": "Banco de Ideas",
   "description": "Read, publish and explore creative bisociations between concepts on unbancodeideas.com.",
+  "icons": [
+    {
+      "src": "https://www.unbancodeideas.com/icons/apple-touch-icon.png",
+      "mimeType": "image/png",
+      "sizes": [
+        "180x180"
+      ]
+    }
+  ],
   "websiteUrl": "https://unbancodeideas.com",
   "repository": {
     "url": "https://github.com/damiancolo/banco-de-ideas-mcp",
     "source": "github"
   },
-  "version": "1.1.1",
+  "version": "1.1.2",
   "packages": [
     {
       "registryType": "npm",
       "identifier": "banco-de-ideas-mcp",
-      "version": "1.1.0",
+      "version": "1.1.1",
       "transport": {
         "type": "stdio"
       },

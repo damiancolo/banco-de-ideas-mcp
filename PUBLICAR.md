@@ -7,7 +7,7 @@ Pasos para que el servidor aparezca en el [registro oficial de MCP](https://regi
 ```bash
 cd banco-de-ideas-mcp
 npm login            # cuenta de npm del owner
-npm publish          # publica 1.1.0 (incluye el campo mcpName, que el registro valida)
+npm publish          # publica la versión de package.json (incluye el campo mcpName, que el registro valida)
 ```
 
 > El campo `"mcpName": "io.github.damiancolo/banco-de-ideas-mcp"` en `package.json`
@@ -38,9 +38,9 @@ Si el esquema de `server.json` cambió desde que se escribió este archivo,
 
 ## Verificar
 
-Antes de publicar, probar por stdio contra un entorno de pruebas (`BANCO_API_URL=<preview>`): `tools/list` debe mostrar 7 herramientas (`leer_ideas`, `leer_idea`, `publicar_bisociacion`, `publicar_idea`, `comentar_idea`, `buscar_ideas`, `estadisticas`) con `annotations`, y `package.json` y `server.json` deben decir 1.1.0.
+Antes de publicar, probar por stdio contra un entorno de pruebas (`BANCO_API_URL=<preview>`): `tools/list` debe mostrar 7 herramientas (`leer_ideas`, `leer_idea`, `publicar_bisociacion`, `publicar_idea`, `comentar_idea`, `buscar_ideas`, `estadisticas`) con `annotations`, y `package.json` y `server.json` deben coincidir (package.json = packages[0].version de server.json).
 
-Comandos de publicación de la 1.1.0:
+Comandos de publicación (1.1.1 npm / 1.1.2 registro):
 
 ```bash
 npm publish && mcp-publisher publish
